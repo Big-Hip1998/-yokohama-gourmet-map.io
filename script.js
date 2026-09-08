@@ -197,6 +197,7 @@ async function openDetailPanel(store) {
   document.getElementById("detail-genre").innerText = store.genre || '-';
   document.getElementById("detail-budget").innerText = store.budget || '-';
   document.getElementById("detail-phone").innerText = store.phone || '-';
+  document.getElementById("detail-notes").innerText = store.notes || '-';
 
   let features = [];
   if (store.is_charter) features.push("貸切");
@@ -304,6 +305,7 @@ async function handleRegister(e) {
     tabelog_url: document.getElementById("reg-tabelog").value,
     hotpepper_url: document.getElementById("reg-hotpepper").value,
     other_url: document.getElementById("reg-other").value,
+    notes: document.getElementById("reg-notes").value,
     lat: parseFloat(document.getElementById("reg-lat").value),
     lng: parseFloat(document.getElementById("reg-lng").value)
   };

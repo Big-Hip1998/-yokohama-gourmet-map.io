@@ -129,12 +129,21 @@ header h1 {
 .filter-group input[type="email"],
 .filter-group input[type="password"],
 .filter-group input[type="url"],
-.filter-group select {
+.filter-group select,
+.filter-group textarea {
   width: 100%;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.9rem;
+  font-family: inherit;
+}
+
+/* 備考記入用の大きめエリアの設定 */
+.filter-group textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.4;
 }
 
 .checkbox-grid {
@@ -191,6 +200,19 @@ header h1 {
 }
 
 .detail-item strong { color: #555; }
+
+/* 詳細パネルの備考用スタイル（改行対応とレイアウト調整） */
+.detail-notes-item {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-notes-item span {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #333;
+  padding-top: 2px;
+}
 
 /* モーダル背景＆ウィンドウ */
 .modal-overlay {

@@ -87,6 +87,7 @@
       <div class="detail-item"><strong>食べログ</strong><a id="detail-tabelog" href="#" target="_blank">-</a></div>
       <div class="detail-item"><strong>ホットペッパー</strong><a id="detail-hotpepper" href="#" target="_blank">-</a></div>
       <div class="detail-item"><strong>他サイト</strong><a id="detail-other" href="#" target="_blank">-</a></div>
+      <div class="detail-item detail-notes-item"><strong>備考</strong><span id="detail-notes">-</span></div>
       
       <div style="margin-top:20px;">
         <button id="delete-store-btn" class="btn btn-danger" style="width:100%; display:none;" onclick="handleDeleteStore()">この店舗を削除する</button>
@@ -154,6 +155,10 @@
         <div class="filter-group">
           <label>他サイト URL</label>
           <input type="url" id="reg-other">
+        </div>
+        <div class="filter-group">
+          <label>備考</label>
+          <textarea id="reg-notes" placeholder="メモや補足情報を入力してください..."></textarea>
         </div>
         
         <input type="hidden" id="reg-lat" value="35.4658">
