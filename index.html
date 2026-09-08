@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>横浜 グルメMap</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header>
+    <h1>横浜 グルメMap</h1>
+    <div class="header-actions">
+      <div id="count-indicator" class="indicator">登録数: 0 / 30 件</div>
+      <button id="add-store-btn" class="btn btn-success" onclick="openRegisterModal()">+ 店舗登録</button>
+      <button class="btn" onclick="openShareModal()">共有</button>
+      
+      <!-- ログイン状態切り替え表示 -->
+      <div id="auth-section">
+        <button id="login-btn" class="btn" onclick="openAuthModal()">ログイン / 登録</button>
+        <span id="user-email" style="display:none; font-size:0.85rem; font-weight:bold;"></span>
+        <button id="logout-btn" class="btn" style="display:none; background:#e74c3c;" onclick="handleLogout()">ログアウト</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <div class="sidebar">
+      <h3>店舗検索・絞り込み</h3>
+      <div class="filter-group">
+        <label>店舗名検索</label>
+        <input type="text" id="search-name" placeholder="店名を入力..." oninput="filterMarkers()">
+      </div>
+      <div class="filter-group">
+        <label>ジャンル</label>
+        <select id="filter-genre" onchange="filterMarkers()">
+          <option value="">すべて</option>
+          <option value="和食">和食</option>
+          <option value="洋食">洋食</option>
+          <option value="中華">中華</option>
+          <option value="イタリアン">イタリアン</option>
+          <option value="居酒屋">居酒屋</option>
+          <option value="カフェ">カフェ</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>予算</label>
+        <select id="filter-budget" onchange="filterMarkers()">
+          <option value="">すべて</option>
+          <option value="1000円以内">1000円以内</option>
+          <option value="3000円くらい">3000円くらい</option>
+          <option value="5000円くらい">5000円くらい</option>
+          <option value="10000円以上">10000円以上</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>こだわり条件</label>
+        <label><input type="checkbox" id="filter-charter" onchange="filterMarkers()"> 貸し切りあり</label>
+        <label><input type="checkbox" id="filter-course" onchange="filterMarkers()"> コースあり</label>
+        <label><input type="checkbox" id="filter-drink" onchange="filterMarkers()"> 飲み放題あり</label>
+        <label><input type="checkbox" id="filter-eat" onchange="filterMarkers()"> 食べ放題あり</label>
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- 詳細スライドパネル（削除ボタン追加） -->
+    <div id="detail-panel" class="detail-panel">
+      <button class="close-btn" onclick="closeDetailPanel()">&times;</button>
+      <h2 id="detail-name" style="margin-bottom: 15px;">店舗名</h2>
+      <div class="detail-item"><strong>ジャンル</strong><span id="detail-genre">-</span></div>
+      <div class="detail-item"><strong>予算</strong><span id="detail-budget">-</span></div>
+      <div class="detail-item"><strong>特徴</strong><span id="detail-features">-</span></div>
+      <div class="detail-item"><strong>連絡先</strong><span id="detail-phone">-</span></div>
+      <div class="detail-item"><strong>公式サイト</strong><a id="detail-official" href="#" target="_blank">-</a></div>
+      <div class="detail-item"><strong>食べログ</strong><a id="detail-tabelog" href="#" target="_blank">-</a></div>
+      <div class="detail-item"><strong>ホットペッパー</strong><a id="detail-hotpepper" href="#" target="_blank">-</a></div>
+      <div class="detail-item"><strong>他サイト</strong><a id="detail-other" href="#" target="_blank">-</a></div>
+      
+      <div style="margin-top:25px;">
+        <button id="delete-store-btn" class="btn" style="background:#e74c3c; width:100%; display:none;" onclick="handleDeleteStore()">この店舗を削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 店舗登録モーダル -->
+  <div id="register-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>店舗を新規登録</h2>
+      <form id="register-form" onsubmit="handleRegister(event)">
+        <p style="font-size:0.8rem; color:#e74c3c; margin-bottom:10px;">※地図上をクリックするとその場所の座標が自動セットされます</p>
+        <div class="filter-group">
+          <label>店名 *</label>
+          <input type="text" id="reg-name" required>
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>ジャンル *</label>
+          <select id="reg-genre" required>
+            <option value="">選択してください</option>
+            <option value="和食">和食</option>
+            <option value="洋食">洋食</option>
+            <option value="中華">中華</option>
+            <option value="イタリアン">イタリアン</option>
+            <option value="居酒屋">居酒屋</option>
+            <option value="カフェ">カフェ</option>
+          </select>
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>予算 *</label>
+          <select id="reg-budget" required>
+            <option value="">選択してください</option>
+            <option value="1000円以内">1000円以内</option>
+            <option value="3000円くらい">3000円くらい</option>
+            <option value="5000円くらい">5000円くらい</option>
+            <option value="10000円以上">10000円以上</option>
+          </select>
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>設備・サービス</label>
+          <label><input type="checkbox" id="reg-charter"> 貸し切りあり</label>
+          <label><input type="checkbox" id="reg-course"> コースあり</label>
+          <label><input type="checkbox" id="reg-drink"> 飲み放題あり</label>
+          <label><input type="checkbox" id="reg-eat"> 食べ放題あり</label>
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>連絡先</label>
+          <input type="text" id="reg-phone">
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>公式サイト URL</label>
+          <input type="url" id="reg-official">
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>食べログ URL</label>
+          <input type="url" id="reg-tabelog">
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>ホットペッパー URL</label>
+          <input type="url" id="reg-hotpepper">
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>他サイト URL</label>
+          <input type="url" id="reg-other">
+        </div>
+        
+        <input type="hidden" id="reg-lat" value="35.4658">
+        <input type="hidden" id="reg-lng" value="139.6223">
+
+        <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn" style="background:#888;" onclick="closeRegisterModal()">キャンセル</button>
+          <button type="submit" id="submit-btn" class="btn btn-success">登録</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 認証（ログイン・新規登録）モーダル -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal">
+      <h2 id="auth-title">ログイン</h2>
+      <form onsubmit="handleAuthSubmit(event)">
+        <div class="filter-group">
+          <label>メールアドレス</label>
+          <input type="email" id="auth-email" required placeholder="example@email.com">
+        </div>
+        <div class="filter-group" style="margin-top:10px;">
+          <label>パスワード</label>
+          <input type="password" id="auth-password" required minlength="6" placeholder="6文字以上">
+        </div>
+        <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+          <a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)" style="font-size:0.85rem; color:#3498db;">新規登録はこちら</a>
+          <div>
+            <button type="button" class="btn" style="background:#888;" onclick="closeAuthModal()">閉じる</button>
+            <button type="submit" class="btn btn-success" id="auth-submit-btn">ログイン</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 共有モーダル -->
+  <div id="share-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>マップの共有</h2>
+      <div class="filter-group">
+        <label>現在のマップID</label>
+        <input type="text" id="share-current-id" readonly value="MAP-YOKOHAMA-001">
+      </div>
+      <hr style="margin: 15px 0;">
+      <div class="filter-group">
+        <label>読み込むマップIDを入力</label>
+        <input type="text" id="share-input-id" placeholder="IDを入力...">
+      </div>
+      <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn" style="background:#888;" onclick="closeShareModal()">閉じる</button>
+        <button type="button" class="btn" onclick="handleImportMap()">読み込み</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
