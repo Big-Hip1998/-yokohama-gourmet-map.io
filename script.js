@@ -6,6 +6,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const MAX_STORES = 30;
 let map;
 let markerLayerGroup;
+let singularityLayerGroup; // 特異点用レイヤーグループ
 let currentStores = [];
 let selectedStore = null;
 let isSignUpMode = false;
@@ -18,9 +19,26 @@ let currentMapId = localStorage.getItem('current_view_map_id') || myDefaultMapId
 
 let tempMarker = null;
 
-// 赤い仮ピンの定義
+// デフォルトの特異点（マーキングピン）初期データ
+const defaultSingularities = [
+  { id: 'yokohama', name: '横浜駅', lat: 35.4658, lng: 139.6223 }
+];
+
+let singularities = JSON.parse(localStorage.getItem('singularities')) || defaultSingularities;
+
+// 赤い仮ピンの定義（店舗追加時の場所選択用）
 const tempIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// ★ 特異点（マーキングピン）専用緑色アイコン（緑色で店舗ピンと差別化）
+const singularityIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
@@ -40,27 +58,39 @@ function generateRandomMapId() {
 
 // 初期化関数
 async function initApp() {
-  map = L.map('map').setView([35.4658, 139.6223], 17);
+  const selectedSingularity = getSelectedSingularity();
+  map = L.map('map').setView([selectedSingularity.lat, selectedSingularity.lng], 17);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map);
 
   markerLayerGroup = L.layerGroup().addTo(map);
+  singularityLayerGroup = L.layerGroup().addTo(map);
 
-  // ピン配置位置の変更
+  // 特異点UIとピンの描画
+  renderSingularitySelect();
+  renderSingularityMarkers();
+
+  // クリック時の座標更新
   map.on('click', (e) => {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
 
+    // 店舗登録フォームへのセット
     document.getElementById("reg-lat").value = lat;
     document.getElementById("reg-lng").value = lng;
+
+    // 特異点追加モーダルへのセット
+    document.getElementById("singularity-lat-input").value = lat;
+    document.getElementById("singularity-lng-input").value = lng;
+    document.getElementById("singularity-coords-input").value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
     if (tempMarker) {
       tempMarker.setLatLng([lat, lng]);
     } else {
       tempMarker = L.marker([lat, lng], { icon: tempIcon }).addTo(map);
-      tempMarker.bindPopup("<b>登録予定位置</b>").openPopup();
+      tempMarker.bindPopup("<b>選択中の場所</b>").openPopup();
     }
   });
 
@@ -72,14 +102,167 @@ async function initApp() {
   await fetchStoresFromSupabase();
 }
 
-// 横浜駅に移動
-function resetToYokohamaStation() {
-  if (map) {
-    map.flyTo([35.4658, 139.6223], 17);
+// --- 特異点（マーキングピン）機能 ---
+
+// 現在選択されている特異点を取得
+function getSelectedSingularity() {
+  const selectedId = localStorage.getItem('selected_singularity_id');
+  const found = singularities.find(s => s.id === selectedId);
+  return found || singularities[0] || defaultSingularities[0];
+}
+
+// ヘッダーのプルダウン構築
+function renderSingularitySelect() {
+  const select = document.getElementById("singularity-select");
+  select.innerHTML = "";
+
+  const currentSelectedId = getSelectedSingularity().id;
+
+  singularities.forEach(singularity => {
+    const option = document.createElement("option");
+    option.value = singularity.id;
+    option.innerText = singularity.name;
+    if (singularity.id === currentSelectedId) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+}
+
+// 地図上に緑色の特異点ピンを配置
+function renderSingularityMarkers() {
+  singularityLayerGroup.clearLayers();
+
+  singularities.forEach(singularity => {
+    const marker = L.marker([singularity.lat, singularity.lng], { icon: singularityIcon });
+    marker.bindPopup(`
+      <div style="text-align:center;">
+        <strong>📍 特異点: ${singularity.name}</strong><br>
+        <button class="btn btn-orange" style="margin-top:5px; padding:2px 8px; font-size:0.75rem;" onclick="moveToSingularityById('${singularity.id}')">ここに移動</button>
+      </div>
+    `);
+    marker.addTo(singularityLayerGroup);
+  });
+}
+
+// プルダウン変更時
+function handleSingularityChange() {
+  const select = document.getElementById("singularity-select");
+  const singularityId = select.value;
+  localStorage.setItem('selected_singularity_id', singularityId);
+  moveToSelectedSingularity();
+}
+
+// 選択中の特異点へジャンプ
+function moveToSelectedSingularity() {
+  const singularity = getSelectedSingularity();
+  if (map && singularity) {
+    map.flyTo([singularity.lat, singularity.lng], 17);
   }
 }
 
-// ユーザー状態更新
+function moveToSingularityById(singularityId) {
+  const found = singularities.find(s => s.id === singularityId);
+  if (found) {
+    localStorage.setItem('selected_singularity_id', singularityId);
+    renderSingularitySelect();
+    map.flyTo([found.lat, found.lng], 17);
+  }
+}
+
+// 特異点管理モーダル関連
+function openSingularityModal() {
+  renderSingularityList();
+  document.getElementById("singularity-modal").classList.add("active");
+}
+
+function closeSingularityModal() {
+  document.getElementById("singularity-modal").classList.remove("active");
+  document.getElementById("add-singularity-form").reset();
+  document.getElementById("singularity-coords-input").value = "";
+}
+
+function setSingularityFromMapCenter() {
+  const center = map.getCenter();
+  document.getElementById("singularity-lat-input").value = center.lat;
+  document.getElementById("singularity-lng-input").value = center.lng;
+  document.getElementById("singularity-coords-input").value = `${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
+}
+
+// 特異点登録処理
+function handleAddSingularity(e) {
+  e.preventDefault();
+  const name = document.getElementById("singularity-name-input").value.trim();
+  const lat = parseFloat(document.getElementById("singularity-lat-input").value);
+  const lng = parseFloat(document.getElementById("singularity-lng-input").value);
+
+  if (!lat || !lng) {
+    alert("地図上をクリックするか「画面中心を使用」を押して座標を指定してください。");
+    return;
+  }
+
+  const newSingularity = {
+    id: `singularity_${Date.now()}`,
+    name: name,
+    lat: lat,
+    lng: lng
+  };
+
+  singularities.push(newSingularity);
+  localStorage.setItem('singularities', JSON.stringify(singularities));
+  localStorage.setItem('selected_singularity_id', newSingularity.id);
+
+  renderSingularitySelect();
+  renderSingularityMarkers();
+  renderSingularityList();
+
+  alert(`特異点「${name}」を保存しました！`);
+  document.getElementById("add-singularity-form").reset();
+  document.getElementById("singularity-coords-input").value = "";
+}
+
+// 登録済み特異点一覧（削除機能）
+function renderSingularityList() {
+  const listContainer = document.getElementById("singularity-list");
+  listContainer.innerHTML = "";
+
+  singularities.forEach(singularity => {
+    const item = document.createElement("div");
+    item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding: 5px 0; border-bottom: 1px solid #eee;";
+
+    const canDelete = singularities.length > 1; // 最低1つは残す
+
+    item.innerHTML = `
+      <div style="font-size:0.85rem;">
+        <strong>${singularity.name}</strong>
+      </div>
+      <div style="display:flex; gap:4px;">
+        <button class="btn btn-orange" style="padding:2px 6px; font-size:0.75rem;" onclick="moveToSingularityById('${singularity.id}'); closeSingularityModal();">移動</button>
+        ${canDelete ? `<button class="btn btn-danger" style="padding:2px 6px; font-size:0.75rem;" onclick="removeSingularity('${singularity.id}')">削除</button>` : ''}
+      </div>
+    `;
+    listContainer.appendChild(item);
+  });
+}
+
+// 特異点削除
+function removeSingularity(singularityId) {
+  if (!confirm("この特異点を削除してもよろしいですか？")) return;
+
+  singularities = singularities.filter(s => s.id !== singularityId);
+  localStorage.setItem('singularities', JSON.stringify(singularities));
+
+  if (localStorage.getItem('selected_singularity_id') === singularityId) {
+    localStorage.setItem('selected_singularity_id', singularities[0].id);
+  }
+
+  renderSingularitySelect();
+  renderSingularityMarkers();
+  renderSingularityList();
+}
+
+
+// --- ユーザー状態更新 ---
 async function updateAuthUIAndSwitchMap(user, authEvent) {
   const loginBtn = document.getElementById("login-btn");
   const logoutBtn = document.getElementById("logout-btn");
@@ -189,7 +372,6 @@ function filterMarkers() {
   });
 }
 
-// 画像数の上限チェック
 function validateImageCount(input) {
   if (input.files.length > 5) {
     alert("画像は最大5枚までしか選択できません。");
@@ -197,7 +379,6 @@ function validateImageCount(input) {
   }
 }
 
-// 詳細パネルの表示 (複数画像対応)
 async function openDetailPanel(store) {
   selectedStore = store;
   document.getElementById("detail-name").innerText = store.name;
@@ -206,7 +387,6 @@ async function openDetailPanel(store) {
   document.getElementById("detail-phone").innerText = store.phone || '-';
   document.getElementById("detail-notes").innerText = store.notes || '-';
 
-  // 複数画像表示の制御
   const imgContainer = document.getElementById("detail-image-container");
   const imgWrapper = document.getElementById("detail-image-wrapper");
   imgWrapper.innerHTML = "";
@@ -273,7 +453,7 @@ function closeDetailPanel() {
   selectedStore = null;
 }
 
-// --- 店舗登録 (複数枚並行アップロード) ---
+// --- 店舗登録 ---
 async function openRegisterModal() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
@@ -290,7 +470,7 @@ async function openRegisterModal() {
     tempMarker.setLatLng([defaultLat, defaultLng]);
   } else {
     tempMarker = L.marker([defaultLat, defaultLng], { icon: tempIcon }).addTo(map);
-    tempMarker.bindPopup("<b>登録予定位置</b>").openPopup();
+    tempMarker.bindPopup("<b>選択中の場所</b>").openPopup();
   }
 
   document.getElementById("register-modal").classList.add("active");
@@ -395,7 +575,6 @@ async function handleRegister(e) {
   submitBtn.innerText = "登録";
 }
 
-// 店舗削除
 async function handleDeleteStore() {
   if (!selectedStore) return;
 
@@ -463,7 +642,7 @@ async function handleLogout() {
   location.reload();
 }
 
-// --- 共有・切り替え・お気に入り機能 ---
+// --- 共有・切り替え機能 ---
 async function openShareModal() {
   document.getElementById("share-current-id").value = currentMapId;
   document.getElementById("my-default-map-id").innerText = myDefaultMapId;

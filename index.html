@@ -17,7 +17,15 @@
   <header>
     <h1>横浜 グルメMap</h1>
     <div class="header-actions">
-      <button class="btn btn-orange" onclick="resetToYokohamaStation()">横浜駅</button>
+      <!-- 特異点移動・選択グループ -->
+      <div class="singularity-selector-group">
+        <select id="singularity-select" class="select-singularity" onchange="handleSingularityChange()">
+          <!-- JSで動的に追加されます -->
+        </select>
+        <button class="btn btn-orange" onclick="moveToSelectedSingularity()">特異点へ移動</button>
+        <button class="btn btn-blue" onclick="openSingularityModal()">特異点管理</button>
+      </div>
+
       <div id="count-indicator" class="indicator">登録数: 0 / 30 件</div>
       <button id="add-store-btn" class="btn btn-success" onclick="openRegisterModal()">+ 店舗登録</button>
       <button class="btn" onclick="openShareModal()">共有・切り替え</button>
@@ -97,6 +105,37 @@
       
       <div style="margin-top:20px;">
         <button id="delete-store-btn" class="btn btn-danger" style="width:100%; display:none;" onclick="handleDeleteStore()">この店舗を削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 特異点（マーキングピン）管理モーダル -->
+  <div id="singularity-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>特異点（マーキングピン）の管理</h2>
+      <p class="modal-notice">※新しい特異点を追加するには、地図上をクリックするか、現在地を中心にして保存してください。</p>
+
+      <form id="add-singularity-form" onsubmit="handleAddSingularity(event)">
+        <div class="filter-group">
+          <label>特異点の名前 (例: 自宅, 会社, 実家)</label>
+          <input type="text" id="singularity-name-input" required placeholder="名前を入力...">
+        </div>
+        <div class="flex-row" style="margin-bottom: 15px;">
+          <input type="text" id="singularity-coords-input" readonly placeholder="地図をクリックして座標を選択">
+          <button type="button" class="btn btn-blue" onclick="setSingularityFromMapCenter()">画面中心を使用</button>
+        </div>
+        <input type="hidden" id="singularity-lat-input">
+        <input type="hidden" id="singularity-lng-input">
+        <button type="submit" class="btn btn-success" style="width:100%;">+ 新しい特異点を保存</button>
+      </form>
+
+      <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
+
+      <label style="font-weight:bold; font-size:0.9rem;">登録済み特異点一覧</label>
+      <div id="singularity-list" class="fav-list" style="max-height: 180px; margin-top:8px;"></div>
+
+      <div class="modal-actions" style="margin-top:15px;">
+        <button type="button" class="btn btn-gray" onclick="closeSingularityModal()">閉じる</button>
       </div>
     </div>
   </div>
