@@ -17,9 +17,11 @@
   <header>
     <h1>横浜 グルメMap</h1>
     <div class="header-actions">
+      <!-- 横浜駅に戻るボタン -->
+      <button class="btn" style="background: #e67e22;" onclick="resetToYokohamaStation()">横浜駅へ移動</button>
       <div id="count-indicator" class="indicator">登録数: 0 / 30 件</div>
       <button id="add-store-btn" class="btn btn-success" onclick="openRegisterModal()">+ 店舗登録</button>
-      <button class="btn" onclick="openShareModal()">共有</button>
+      <button class="btn" onclick="openShareModal()">共有・マップ選択</button>
       
       <!-- ログイン状態切り替え表示 -->
       <div id="auth-section">
@@ -70,7 +72,7 @@
 
     <div id="map"></div>
 
-    <!-- 詳細スライドパネル（削除ボタン追加） -->
+    <!-- 詳細スライドパネル -->
     <div id="detail-panel" class="detail-panel">
       <button class="close-btn" onclick="closeDetailPanel()">&times;</button>
       <h2 id="detail-name" style="margin-bottom: 15px;">店舗名</h2>
@@ -184,22 +186,54 @@
     </div>
   </div>
 
-  <!-- 共有モーダル -->
+  <!-- 共有・切り替え・お気に入りモーダル -->
   <div id="share-modal" class="modal-overlay">
-    <div class="modal">
-      <h2>マップの共有</h2>
+    <div class="modal" style="max-width:450px;">
+      <h2>マップの共有・切り替え</h2>
+      
+      <!-- 現在表示中のマップ情報 -->
       <div class="filter-group">
-        <label>現在のマップID</label>
-        <input type="text" id="share-current-id" readonly value="MAP-YOKOHAMA-001">
+        <label>現在表示中のマップID</label>
+        <div style="display:flex; gap:5px;">
+          <input type="text" id="share-current-id" readonly value="" style="flex:1;">
+          <button type="button" class="btn" style="background:#3498db;" onclick="copyMapId()">コピー</button>
+        </div>
       </div>
+
+      <!-- 現在のマップをお気に入りに追加する領域 -->
+      <div style="margin-top: 10px; display:flex; gap:5px;">
+        <input type="text" id="fav-title-input" placeholder="お気に入りの名前 (例: たろうのマップ)" style="flex:1; font-size:0.85rem;">
+        <button type="button" class="btn" style="background:#f39c12; white-space:nowrap;" onclick="addCurrentToFavorites()">★ お気に入りに追加</button>
+      </div>
+
+      <!-- 自分のデフォルトマップ切り替え案内 -->
+      <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+        <div style="font-size:0.85rem; margin-bottom: 5px;">
+          自分のデフォルトマップID: <strong id="my-default-map-id">-</strong>
+        </div>
+        <button type="button" class="btn" style="background:#2ecc71; width:100%;" onclick="switchToMyDefaultMap()">
+          自分のデフォルトマップを表示する
+        </button>
+      </div>
+
+      <!-- お気に入りリスト表示エリア -->
+      <div style="margin-top: 15px;">
+        <label style="font-weight:bold; font-size:0.9rem;">★ お気に入りマップ一覧</label>
+        <div id="favorite-list" style="max-height: 120px; overflow-y: auto; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
+          <!-- JSで動的に追加されます -->
+        </div>
+      </div>
+
       <hr style="margin: 15px 0;">
+
+      <!-- 他人のマップ読み込み -->
       <div class="filter-group">
-        <label>読み込むマップIDを入力</label>
-        <input type="text" id="share-input-id" placeholder="IDを入力...">
+        <label>他人のマップIDを読み込む</label>
+        <input type="text" id="share-input-id" placeholder="例: MAP-A3F8B2">
       </div>
       <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
         <button type="button" class="btn" style="background:#888;" onclick="closeShareModal()">閉じる</button>
-        <button type="button" class="btn" onclick="handleImportMap()">読み込み</button>
+        <button type="button" class="btn btn-success" onclick="handleImportMap()">このマップを表示</button>
       </div>
     </div>
   </div>
