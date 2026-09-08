@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>横浜 グルメMap</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,22 +17,22 @@
   <header>
     <h1>横浜 グルメMap</h1>
     <div class="header-actions">
-      <!-- 横浜駅に戻るボタン -->
-      <button class="btn" style="background: #e67e22;" onclick="resetToYokohamaStation()">横浜駅へ移動</button>
+      <button class="btn btn-orange" onclick="resetToYokohamaStation()">横浜駅</button>
       <div id="count-indicator" class="indicator">登録数: 0 / 30 件</div>
       <button id="add-store-btn" class="btn btn-success" onclick="openRegisterModal()">+ 店舗登録</button>
-      <button class="btn" onclick="openShareModal()">共有・マップ選択</button>
+      <button class="btn" onclick="openShareModal()">共有・切り替え</button>
       
-      <!-- ログイン状態切り替え表示 -->
+      <!-- ログイン状態表示 -->
       <div id="auth-section">
-        <button id="login-btn" class="btn" onclick="openAuthModal()">ログイン / 登録</button>
-        <span id="user-email" style="display:none; font-size:0.85rem; font-weight:bold;"></span>
-        <button id="logout-btn" class="btn" style="display:none; background:#e74c3c;" onclick="handleLogout()">ログアウト</button>
+        <button id="login-btn" class="btn" onclick="openAuthModal()">ログイン</button>
+        <span id="user-email" class="user-email-text" style="display:none;"></span>
+        <button id="logout-btn" class="btn btn-danger" style="display:none;" onclick="handleLogout()">ログアウト</button>
       </div>
     </div>
   </header>
 
   <div class="main-container">
+    <!-- サイドバー (絞り込み機能) -->
     <div class="sidebar">
       <h3>店舗検索・絞り込み</h3>
       <div class="filter-group">
@@ -63,19 +63,22 @@
       </div>
       <div class="filter-group">
         <label>こだわり条件</label>
-        <label><input type="checkbox" id="filter-charter" onchange="filterMarkers()"> 貸し切りあり</label>
-        <label><input type="checkbox" id="filter-course" onchange="filterMarkers()"> コースあり</label>
-        <label><input type="checkbox" id="filter-drink" onchange="filterMarkers()"> 飲み放題あり</label>
-        <label><input type="checkbox" id="filter-eat" onchange="filterMarkers()"> 食べ放題あり</label>
+        <div class="checkbox-grid">
+          <label><input type="checkbox" id="filter-charter" onchange="filterMarkers()"> 貸切</label>
+          <label><input type="checkbox" id="filter-course" onchange="filterMarkers()"> コース</label>
+          <label><input type="checkbox" id="filter-drink" onchange="filterMarkers()"> 飲み放題</label>
+          <label><input type="checkbox" id="filter-eat" onchange="filterMarkers()"> 食べ放題</label>
+        </div>
       </div>
     </div>
 
+    <!-- 地図領域 -->
     <div id="map"></div>
 
     <!-- 詳細スライドパネル -->
     <div id="detail-panel" class="detail-panel">
       <button class="close-btn" onclick="closeDetailPanel()">&times;</button>
-      <h2 id="detail-name" style="margin-bottom: 15px;">店舗名</h2>
+      <h2 id="detail-name">店舗名</h2>
       <div class="detail-item"><strong>ジャンル</strong><span id="detail-genre">-</span></div>
       <div class="detail-item"><strong>予算</strong><span id="detail-budget">-</span></div>
       <div class="detail-item"><strong>特徴</strong><span id="detail-features">-</span></div>
@@ -85,8 +88,8 @@
       <div class="detail-item"><strong>ホットペッパー</strong><a id="detail-hotpepper" href="#" target="_blank">-</a></div>
       <div class="detail-item"><strong>他サイト</strong><a id="detail-other" href="#" target="_blank">-</a></div>
       
-      <div style="margin-top:25px;">
-        <button id="delete-store-btn" class="btn" style="background:#e74c3c; width:100%; display:none;" onclick="handleDeleteStore()">この店舗を削除する</button>
+      <div style="margin-top:20px;">
+        <button id="delete-store-btn" class="btn btn-danger" style="width:100%; display:none;" onclick="handleDeleteStore()">この店舗を削除する</button>
       </div>
     </div>
   </div>
@@ -96,12 +99,12 @@
     <div class="modal">
       <h2>店舗を新規登録</h2>
       <form id="register-form" onsubmit="handleRegister(event)">
-        <p style="font-size:0.8rem; color:#e74c3c; margin-bottom:10px;">※地図上をクリックするとその場所の座標が自動セットされます</p>
+        <p class="modal-notice">※地図上をクリックするとその場所の座標が自動セットされます</p>
         <div class="filter-group">
           <label>店名 *</label>
           <input type="text" id="reg-name" required>
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>ジャンル *</label>
           <select id="reg-genre" required>
             <option value="">選択してください</option>
@@ -113,7 +116,7 @@
             <option value="カフェ">カフェ</option>
           </select>
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>予算 *</label>
           <select id="reg-budget" required>
             <option value="">選択してください</option>
@@ -123,30 +126,32 @@
             <option value="10000円以上">10000円以上</option>
           </select>
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>設備・サービス</label>
-          <label><input type="checkbox" id="reg-charter"> 貸し切りあり</label>
-          <label><input type="checkbox" id="reg-course"> コースあり</label>
-          <label><input type="checkbox" id="reg-drink"> 飲み放題あり</label>
-          <label><input type="checkbox" id="reg-eat"> 食べ放題あり</label>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" id="reg-charter"> 貸し切りあり</label>
+            <label><input type="checkbox" id="reg-course"> コースあり</label>
+            <label><input type="checkbox" id="reg-drink"> 飲み放題あり</label>
+            <label><input type="checkbox" id="reg-eat"> 食べ放題あり</label>
+          </div>
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>連絡先</label>
           <input type="text" id="reg-phone">
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>公式サイト URL</label>
           <input type="url" id="reg-official">
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>食べログ URL</label>
           <input type="url" id="reg-tabelog">
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>ホットペッパー URL</label>
           <input type="url" id="reg-hotpepper">
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>他サイト URL</label>
           <input type="url" id="reg-other">
         </div>
@@ -154,15 +159,15 @@
         <input type="hidden" id="reg-lat" value="35.4658">
         <input type="hidden" id="reg-lng" value="139.6223">
 
-        <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn" style="background:#888;" onclick="closeRegisterModal()">キャンセル</button>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-gray" onclick="closeRegisterModal()">キャンセル</button>
           <button type="submit" id="submit-btn" class="btn btn-success">登録</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 認証（ログイン・新規登録）モーダル -->
+  <!-- 認証モーダル -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal">
       <h2 id="auth-title">ログイン</h2>
@@ -171,14 +176,14 @@
           <label>メールアドレス</label>
           <input type="email" id="auth-email" required placeholder="example@email.com">
         </div>
-        <div class="filter-group" style="margin-top:10px;">
+        <div class="filter-group">
           <label>パスワード</label>
           <input type="password" id="auth-password" required minlength="6" placeholder="6文字以上">
         </div>
-        <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
-          <a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)" style="font-size:0.85rem; color:#3498db;">新規登録はこちら</a>
-          <div>
-            <button type="button" class="btn" style="background:#888;" onclick="closeAuthModal()">閉じる</button>
+        <div class="auth-modal-footer">
+          <a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)">新規登録はこちら</a>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-gray" onclick="closeAuthModal()">閉じる</button>
             <button type="submit" class="btn btn-success" id="auth-submit-btn">ログイン</button>
           </div>
         </div>
@@ -186,53 +191,46 @@
     </div>
   </div>
 
-  <!-- 共有・切り替え・お気に入りモーダル -->
+  <!-- 共有・切り替えモーダル -->
   <div id="share-modal" class="modal-overlay">
-    <div class="modal" style="max-width:450px;">
+    <div class="modal">
       <h2>マップの共有・切り替え</h2>
       
-      <!-- 現在表示中のマップ情報 -->
       <div class="filter-group">
         <label>現在表示中のマップID</label>
-        <div style="display:flex; gap:5px;">
-          <input type="text" id="share-current-id" readonly value="" style="flex:1;">
-          <button type="button" class="btn" style="background:#3498db;" onclick="copyMapId()">コピー</button>
+        <div class="flex-row">
+          <input type="text" id="share-current-id" readonly value="">
+          <button type="button" class="btn btn-blue" onclick="copyMapId()">コピー</button>
         </div>
       </div>
 
-      <!-- 現在のマップをお気に入りに追加する領域 -->
-      <div style="margin-top: 10px; display:flex; gap:5px;">
-        <input type="text" id="fav-title-input" placeholder="お気に入りの名前 (例: たろうのマップ)" style="flex:1; font-size:0.85rem;">
-        <button type="button" class="btn" style="background:#f39c12; white-space:nowrap;" onclick="addCurrentToFavorites()">★ お気に入りに追加</button>
+      <div class="flex-row" style="margin-top: 10px;">
+        <input type="text" id="fav-title-input" placeholder="お気に入りの名前 (例: たろうのマップ)">
+        <button type="button" class="btn btn-orange" style="white-space:nowrap;" onclick="addCurrentToFavorites()">★ お気に入り追加</button>
       </div>
 
-      <!-- 自分のデフォルトマップ切り替え案内 -->
-      <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+      <div class="info-box">
         <div style="font-size:0.85rem; margin-bottom: 5px;">
           自分のデフォルトマップID: <strong id="my-default-map-id">-</strong>
         </div>
-        <button type="button" class="btn" style="background:#2ecc71; width:100%;" onclick="switchToMyDefaultMap()">
+        <button type="button" class="btn btn-success" style="width:100%;" onclick="switchToMyDefaultMap()">
           自分のデフォルトマップを表示する
         </button>
       </div>
 
-      <!-- お気に入りリスト表示エリア -->
       <div style="margin-top: 15px;">
         <label style="font-weight:bold; font-size:0.9rem;">★ お気に入りマップ一覧</label>
-        <div id="favorite-list" style="max-height: 120px; overflow-y: auto; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
-          <!-- JSで動的に追加されます -->
-        </div>
+        <div id="favorite-list" class="fav-list"></div>
       </div>
 
-      <hr style="margin: 15px 0;">
+      <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
 
-      <!-- 他人のマップ読み込み -->
       <div class="filter-group">
         <label>他人のマップIDを読み込む</label>
         <input type="text" id="share-input-id" placeholder="例: MAP-A3F8B2">
       </div>
-      <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
-        <button type="button" class="btn" style="background:#888;" onclick="closeShareModal()">閉じる</button>
+      <div class="modal-actions" style="margin-top:15px;">
+        <button type="button" class="btn btn-gray" onclick="closeShareModal()">閉じる</button>
         <button type="button" class="btn btn-success" onclick="handleImportMap()">このマップを表示</button>
       </div>
     </div>

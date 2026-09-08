@@ -10,17 +10,15 @@ let currentStores = [];
 let selectedStore = null;
 let isSignUpMode = false;
 
-// ユーザー自身のデフォルトマップID（未ログイン時はローカル生成、ログイン時はアカウント固有）
+// 初期化用マップID処理
 let myDefaultMapId = localStorage.getItem('my_default_map_id') || generateRandomMapId();
 localStorage.setItem('my_default_map_id', myDefaultMapId);
 
-// 現在読み込んでいるマップID
 let currentMapId = localStorage.getItem('current_view_map_id') || myDefaultMapId;
 
-// 登録時の仮ピン用変数
 let tempMarker = null;
 
-// 赤い仮ピン用アイコンの定義
+// 赤い仮ピンの定義
 const tempIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -30,7 +28,7 @@ const tempIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// ランダムなマップID作成関数（例: MAP-A3F8B2）
+// マップID作成関数（例: MAP-A3F8B2）
 function generateRandomMapId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let randomStr = '';
@@ -40,9 +38,8 @@ function generateRandomMapId() {
   return `MAP-${randomStr}`;
 }
 
-// 初期化処理
+// 初期化関数
 async function initApp() {
-  // 初期表示のズームレベル: 17
   map = L.map('map').setView([35.4658, 139.6223], 17);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -51,7 +48,7 @@ async function initApp() {
 
   markerLayerGroup = L.layerGroup().addTo(map);
 
-  // 地図クリック時の処理（仮ピンを立てる）
+  // ピン配置位置の変更
   map.on('click', (e) => {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
@@ -67,23 +64,23 @@ async function initApp() {
     }
   });
 
-  // 認証状態の監視
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    updateAuthUI(session?.user || null);
+  // 認証状態のリアルタイム検出・監視
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    await updateAuthUIAndSwitchMap(session?.user || null, event);
   });
 
   await fetchStoresFromSupabase();
 }
 
-// 横浜駅の中心座標に地図を移動させる（ズームレベル 17）
+// 横浜駅に移動
 function resetToYokohamaStation() {
   if (map) {
     map.flyTo([35.4658, 139.6223], 17);
   }
 }
 
-// ユーザーログイン状態に応じたUIの切り替え
-function updateAuthUI(user) {
+// ユーザー状態更新 ＆ ログイン時に固有マップへ切り替え
+async function updateAuthUIAndSwitchMap(user, authEvent) {
   const loginBtn = document.getElementById("login-btn");
   const logoutBtn = document.getElementById("logout-btn");
   const userEmail = document.getElementById("user-email");
@@ -94,14 +91,16 @@ function updateAuthUI(user) {
     userEmail.style.display = "inline-block";
     userEmail.innerText = user.email;
 
-    // ログインユーザーの場合、アカウント固有のIDをデフォルトマップIDとして設定
+    // アカウント固有のマップIDを設定
     myDefaultMapId = `MAP-${user.id.substring(0, 8).toUpperCase()}`;
     localStorage.setItem('my_default_map_id', myDefaultMapId);
 
-    // 共有・他マップの閲覧中でない場合は自分のデフォルトマップをセット
-    if (!localStorage.getItem('is_viewing_other_map')) {
+    // ★ ログインイベント発生時、または初回読み込み時に固有マップへ切り替える
+    if (authEvent === 'SIGNED_IN' || !localStorage.getItem('is_viewing_other_map')) {
       currentMapId = myDefaultMapId;
       localStorage.setItem('current_view_map_id', currentMapId);
+      localStorage.removeItem('is_viewing_other_map');
+      await fetchStoresFromSupabase();
     }
   } else {
     loginBtn.style.display = "inline-block";
@@ -114,7 +113,7 @@ function updateAuthUI(user) {
   }
 }
 
-// データ取得（現在の currentMapId のデータのみ取得）
+// データ取得
 async function fetchStoresFromSupabase() {
   const { data, error } = await supabaseClient
     .from('stores')
@@ -200,10 +199,10 @@ async function openDetailPanel(store) {
   document.getElementById("detail-phone").innerText = store.phone || '-';
 
   let features = [];
-  if (store.is_charter) features.push("貸し切りあり");
-  if (store.has_course) features.push("コースあり");
-  if (store.has_all_you_can_drink) features.push("飲み放題あり");
-  if (store.has_all_you_can_eat) features.push("食べ放題あり");
+  if (store.is_charter) features.push("貸切");
+  if (store.has_course) features.push("コース");
+  if (store.has_all_you_can_drink) features.push("飲み放題");
+  if (store.has_all_you_can_eat) features.push("食べ放題");
   document.getElementById("detail-features").innerText = features.join(" / ") || "なし";
 
   setupLink("detail-official", store.official_url);
@@ -231,11 +230,11 @@ function setupLink(elementId, url) {
   const el = document.getElementById(elementId);
   if (url) {
     el.href = url;
-    el.innerText = "リンクを開く";
+    el.innerText = "開く";
     el.style.color = "#3498db";
   } else {
     el.removeAttribute("href");
-    el.innerText = "登録なし";
+    el.innerText = "-";
     el.style.color = "#999";
   }
 }
@@ -245,7 +244,7 @@ function closeDetailPanel() {
   selectedStore = null;
 }
 
-// --- 店舗登録機能 ---
+// --- 店舗登録 ---
 async function openRegisterModal() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
@@ -283,7 +282,7 @@ async function handleRegister(e) {
 
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
-    alert("ログインセッションが切れました。再ログインしてください。");
+    alert("ログインが必要です。");
     return;
   }
 
@@ -309,12 +308,10 @@ async function handleRegister(e) {
     lng: parseFloat(document.getElementById("reg-lng").value)
   };
 
-  const { error } = await supabaseClient
-    .from('stores')
-    .insert([newStore]);
+  const { error } = await supabaseClient.from('stores').insert([newStore]);
 
   if (error) {
-    alert('保存に失敗しました: ' + error.message);
+    alert('保存失敗: ' + error.message);
   } else {
     if (tempMarker) {
       map.removeLayer(tempMarker);
@@ -327,7 +324,7 @@ async function handleRegister(e) {
   submitBtn.disabled = false;
 }
 
-// --- 店舗削除機能 ---
+// --- 店舗削除 ---
 async function handleDeleteStore() {
   if (!selectedStore) return;
 
@@ -338,10 +335,9 @@ async function handleDeleteStore() {
       .eq('id', selectedStore.id);
 
     if (error) {
-      alert(`削除に失敗しました:\n${error.message} (コード: ${error.code})`);
-      console.error('Delete error details:', error);
+      alert(`削除に失敗しました: ${error.message}`);
     } else {
-      alert('削除完了しました。');
+      alert('削除が完了しました。');
       closeDetailPanel();
       await fetchStoresFromSupabase();
     }
@@ -376,7 +372,7 @@ async function handleAuthSubmit(e) {
     if (error) {
       alert("登録失敗: " + error.message);
     } else {
-      alert("アカウント作成完了。ログインします。");
+      alert("登録が完了しました。ログインします。");
       closeAuthModal();
     }
   } else {
@@ -393,6 +389,7 @@ async function handleLogout() {
   localStorage.removeItem('is_viewing_other_map');
   await supabaseClient.auth.signOut();
   alert("ログアウトしました。");
+  location.reload(); // 画面再読み込みでマイマップ等を初期化
 }
 
 // --- 共有・切り替え・お気に入り機能 ---
@@ -409,17 +406,16 @@ function closeShareModal() {
   document.getElementById("share-modal").classList.remove("active");
 }
 
-// マップIDをコピーする機能
 function copyMapId() {
   const copyText = document.getElementById("share-current-id");
   navigator.clipboard.writeText(copyText.value).then(() => {
-    alert("マップIDをクリップボードにコピーしました: " + copyText.value);
-  }).catch(err => {
+    alert("マップIDをコピーしました: " + copyText.value);
+  }).catch(() => {
     alert("コピーに失敗しました");
   });
 }
 
-// 自分のデフォルトマップにいつでも切り替える関数
+// 自分のデフォルトマップに切り替え
 async function switchToMyDefaultMap() {
   currentMapId = myDefaultMapId;
   localStorage.setItem('current_view_map_id', currentMapId);
@@ -430,7 +426,6 @@ async function switchToMyDefaultMap() {
   closeShareModal();
 }
 
-// 別のマップIDを表示する機能
 async function handleImportMap() {
   const inputId = document.getElementById("share-input-id").value.trim();
   if (!inputId) {
@@ -442,7 +437,6 @@ async function handleImportMap() {
   closeShareModal();
 }
 
-// 指定したマップIDに切り替える共通関数
 async function switchToSpecificMap(targetMapId) {
   currentMapId = targetMapId;
   localStorage.setItem('current_view_map_id', currentMapId);
@@ -458,9 +452,7 @@ async function switchToSpecificMap(targetMapId) {
   alert(`マップID: 「${currentMapId}」に切り替えました。`);
 }
 
-// --- お気に入りテーブル（favorite_maps）連携機能 ---
-
-// お気に入り一覧の取得と表示
+// お気に入り一覧取得
 async function fetchFavoriteMaps() {
   const favListContainer = document.getElementById("favorite-list");
   favListContainer.innerHTML = "<div style='font-size:0.8rem; color:#888;'>読み込み中...</div>";
@@ -478,13 +470,12 @@ async function fetchFavoriteMaps() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('お気に入り取得エラー:', error);
     favListContainer.innerHTML = "<div style='font-size:0.8rem; color:#e74c3c;'>取得に失敗しました</div>";
     return;
   }
 
   if (!data || data.length === 0) {
-    favListContainer.innerHTML = "<div style='font-size:0.8rem; color:#888;'>登録されたお気に入りは無ありません</div>";
+    favListContainer.innerHTML = "<div style='font-size:0.8rem; color:#888;'>お気に入りは登録されていません</div>";
     return;
   }
 
@@ -494,20 +485,19 @@ async function fetchFavoriteMaps() {
     item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding: 4px 0; border-bottom: 1px solid #eee;";
     
     item.innerHTML = `
-      <div style="font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">
+      <div style="font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:160px;">
         <strong>${fav.map_title || fav.map_id}</strong>
-        <span style="font-size:0.75rem; color:#888;">(${fav.map_id})</span>
       </div>
-      <div style="display:flex; gap:5px;">
-        <button class="btn" style="padding:2px 6px; font-size:0.75rem; background:#3498db;" onclick="switchToSpecificMap('${fav.map_id}'); closeShareModal();">表示</button>
-        <button class="btn" style="padding:2px 6px; font-size:0.75rem; background:#e74c3c;" onclick="removeFavoriteMap('${fav.id}')">削除</button>
+      <div style="display:flex; gap:4px;">
+        <button class="btn btn-blue" style="padding:2px 6px; font-size:0.75rem;" onclick="switchToSpecificMap('${fav.map_id}'); closeShareModal();">表示</button>
+        <button class="btn btn-danger" style="padding:2px 6px; font-size:0.75rem;" onclick="removeFavoriteMap('${fav.id}')">削除</button>
       </div>
     `;
     favListContainer.appendChild(item);
   });
 }
 
-// 現在表示中のマップをお気に入りに追加
+// お気に入り追加
 async function addCurrentToFavorites() {
   const { data: { user } } = await supabaseClient.auth.getUser();
 
@@ -528,7 +518,7 @@ async function addCurrentToFavorites() {
     }]);
 
   if (error) {
-    if (error.code === '23505') { // UNIQUE制約違反
+    if (error.code === '23505') {
       alert("このマップは既にお気に入りに登録されています。");
     } else {
       alert("お気に入り登録に失敗しました: " + error.message);
@@ -540,7 +530,7 @@ async function addCurrentToFavorites() {
   }
 }
 
-// お気に入りの削除
+// お気に入り削除
 async function removeFavoriteMap(favId) {
   if (!confirm("このお気に入りを削除しますか？")) return;
 
