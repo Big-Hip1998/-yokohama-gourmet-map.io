@@ -28,7 +28,7 @@ const tempIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// マップID作成関数（例: MAP-A3F8B2）
+// マップID作成関数
 function generateRandomMapId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let randomStr = '';
@@ -64,7 +64,7 @@ async function initApp() {
     }
   });
 
-  // 認証状態のリアルタイム検出・監視
+  // 認証状態の監視
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     await updateAuthUIAndSwitchMap(session?.user || null, event);
   });
@@ -79,7 +79,7 @@ function resetToYokohamaStation() {
   }
 }
 
-// ユーザー状態更新 ＆ ログイン時に固有マップへ切り替え
+// ユーザー状態更新
 async function updateAuthUIAndSwitchMap(user, authEvent) {
   const loginBtn = document.getElementById("login-btn");
   const logoutBtn = document.getElementById("logout-btn");
@@ -91,11 +91,9 @@ async function updateAuthUIAndSwitchMap(user, authEvent) {
     userEmail.style.display = "inline-block";
     userEmail.innerText = user.email;
 
-    // アカウント固有のマップIDを設定
     myDefaultMapId = `MAP-${user.id.substring(0, 8).toUpperCase()}`;
     localStorage.setItem('my_default_map_id', myDefaultMapId);
 
-    // ★ ログインイベント発生時、または初回読み込み時に固有マップへ切り替える
     if (authEvent === 'SIGNED_IN' || !localStorage.getItem('is_viewing_other_map')) {
       currentMapId = myDefaultMapId;
       localStorage.setItem('current_view_map_id', currentMapId);
@@ -191,6 +189,15 @@ function filterMarkers() {
   });
 }
 
+// 画像数の上限チェック
+function validateImageCount(input) {
+  if (input.files.length > 5) {
+    alert("画像は最大5枚までしか選択できません。");
+    input.value = "";
+  }
+}
+
+// 詳細パネルの表示 (複数画像対応)
 async function openDetailPanel(store) {
   selectedStore = store;
   document.getElementById("detail-name").innerText = store.name;
@@ -198,6 +205,27 @@ async function openDetailPanel(store) {
   document.getElementById("detail-budget").innerText = store.budget || '-';
   document.getElementById("detail-phone").innerText = store.phone || '-';
   document.getElementById("detail-notes").innerText = store.notes || '-';
+
+  // 複数画像表示の制御
+  const imgContainer = document.getElementById("detail-image-container");
+  const imgWrapper = document.getElementById("detail-image-wrapper");
+  imgWrapper.innerHTML = "";
+
+  const images = store.image_urls && store.image_urls.length > 0 
+    ? store.image_urls 
+    : (store.image_url ? [store.image_url] : []);
+
+  if (images.length > 0) {
+    images.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "店舗画像";
+      imgWrapper.appendChild(img);
+    });
+    imgContainer.style.display = "block";
+  } else {
+    imgContainer.style.display = "none";
+  }
 
   let features = [];
   if (store.is_charter) features.push("貸切");
@@ -245,7 +273,7 @@ function closeDetailPanel() {
   selectedStore = null;
 }
 
-// --- 店舗登録 ---
+// --- 店舗登録 (複数枚並行アップロード) ---
 async function openRegisterModal() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
@@ -287,8 +315,46 @@ async function handleRegister(e) {
     return;
   }
 
+  const imageFiles = Array.from(document.getElementById("reg-image").files);
+  if (imageFiles.length > 5) {
+    alert("画像は最大5枚までです。");
+    return;
+  }
+
   const submitBtn = document.getElementById("submit-btn");
   submitBtn.disabled = true;
+  submitBtn.innerText = "保存中...";
+
+  let imageUrls = [];
+
+  if (imageFiles.length > 0) {
+    try {
+      const uploadPromises = imageFiles.map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+        const filePath = `store-photos/${fileName}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+          .from('store-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabaseClient.storage
+          .from('store-images')
+          .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+      });
+
+      imageUrls = await Promise.all(uploadPromises);
+    } catch (err) {
+      alert("画像のアップロードに失敗しました: " + err.message);
+      submitBtn.disabled = false;
+      submitBtn.innerText = "登録";
+      return;
+    }
+  }
 
   const newStore = {
     user_id: user.id,
@@ -306,6 +372,8 @@ async function handleRegister(e) {
     hotpepper_url: document.getElementById("reg-hotpepper").value,
     other_url: document.getElementById("reg-other").value,
     notes: document.getElementById("reg-notes").value,
+    image_urls: imageUrls,
+    image_url: imageUrls[0] || null,
     lat: parseFloat(document.getElementById("reg-lat").value),
     lng: parseFloat(document.getElementById("reg-lng").value)
   };
@@ -324,9 +392,10 @@ async function handleRegister(e) {
   }
 
   submitBtn.disabled = false;
+  submitBtn.innerText = "登録";
 }
 
-// --- 店舗削除 ---
+// 店舗削除
 async function handleDeleteStore() {
   if (!selectedStore) return;
 
@@ -391,7 +460,7 @@ async function handleLogout() {
   localStorage.removeItem('is_viewing_other_map');
   await supabaseClient.auth.signOut();
   alert("ログアウトしました。");
-  location.reload(); // 画面再読み込みでマイマップ等を初期化
+  location.reload();
 }
 
 // --- 共有・切り替え・お気に入り機能 ---
@@ -417,7 +486,6 @@ function copyMapId() {
   });
 }
 
-// 自分のデフォルトマップに切り替え
 async function switchToMyDefaultMap() {
   currentMapId = myDefaultMapId;
   localStorage.setItem('current_view_map_id', currentMapId);
@@ -454,7 +522,6 @@ async function switchToSpecificMap(targetMapId) {
   alert(`マップID: 「${currentMapId}」に切り替えました。`);
 }
 
-// お気に入り一覧取得
 async function fetchFavoriteMaps() {
   const favListContainer = document.getElementById("favorite-list");
   favListContainer.innerHTML = "<div style='font-size:0.8rem; color:#888;'>読み込み中...</div>";
@@ -499,7 +566,6 @@ async function fetchFavoriteMaps() {
   });
 }
 
-// お気に入り追加
 async function addCurrentToFavorites() {
   const { data: { user } } = await supabaseClient.auth.getUser();
 
@@ -532,7 +598,6 @@ async function addCurrentToFavorites() {
   }
 }
 
-// お気に入り削除
 async function removeFavoriteMap(favId) {
   if (!confirm("このお気に入りを削除しますか？")) return;
 

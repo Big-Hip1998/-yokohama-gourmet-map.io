@@ -39,7 +39,6 @@ header h1 {
   padding: 5px 0;
 }
 
-/* インジケータ */
 .indicator {
   font-size: 0.8rem;
   background: rgba(255,255,255,0.15);
@@ -54,7 +53,6 @@ header h1 {
   font-weight: bold;
 }
 
-/* 汎用ボタン */
 .btn {
   padding: 6px 12px;
   border: none;
@@ -84,7 +82,7 @@ header h1 {
   text-overflow: ellipsis;
 }
 
-/* レイアウト構成 */
+/* メインコンテナ */
 .main-container {
   display: flex;
   height: calc(100% - 60px);
@@ -113,7 +111,7 @@ header h1 {
   z-index: 1;
 }
 
-/* フォーム共通要素 */
+/* フォーム構造 */
 .filter-group {
   margin-bottom: 12px;
 }
@@ -129,6 +127,7 @@ header h1 {
 .filter-group input[type="email"],
 .filter-group input[type="password"],
 .filter-group input[type="url"],
+.filter-group input[type="file"],
 .filter-group select,
 .filter-group textarea {
   width: 100%;
@@ -139,7 +138,6 @@ header h1 {
   font-family: inherit;
 }
 
-/* 備考記入用の大きめエリアの設定 */
 .filter-group textarea {
   min-height: 80px;
   resize: vertical;
@@ -160,7 +158,7 @@ header h1 {
 
 .flex-row input { flex: 1; }
 
-/* 右側（スマホは下部）スライド詳細パネル */
+/* 詳細パネル */
 .detail-panel {
   position: absolute;
   top: 0;
@@ -188,6 +186,33 @@ header h1 {
   font-size: 1.8rem;
   cursor: pointer;
   color: #888;
+  z-index: 10;
+}
+
+/* 複数画像スライダーギャラリー */
+.detail-image-box {
+  width: 100%;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.detail-image-wrapper {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px;
+}
+
+.detail-image-wrapper img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 4px;
+  scroll-snap-align: start;
 }
 
 .detail-item {
@@ -201,7 +226,6 @@ header h1 {
 
 .detail-item strong { color: #555; }
 
-/* 詳細パネルの備考用スタイル（改行対応とレイアウト調整） */
 .detail-notes-item {
   flex-direction: column;
   gap: 4px;
@@ -214,7 +238,7 @@ header h1 {
   padding-top: 2px;
 }
 
-/* モーダル背景＆ウィンドウ */
+/* モーダル */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -290,9 +314,7 @@ header h1 {
   padding: 5px;
 }
 
-/* =========================================================
-   レスポンシブ（スマホ）対応
-   ========================================================= */
+/* モバイルレスポンシブ対応 */
 @media (max-width: 768px) {
   header {
     height: auto;
@@ -318,7 +340,7 @@ header h1 {
 
   .sidebar {
     width: 100%;
-    height: 140px; /* スマホでは下部にコンパクト表示 */
+    height: 140px;
     border-right: none;
     border-top: 1px solid #ddd;
     padding: 10px;
@@ -329,7 +351,6 @@ header h1 {
     height: calc(100% - 140px);
   }
 
-  /* モバイル時の詳細スライドパネル（下から出ます） */
   .detail-panel {
     top: auto;
     bottom: -100%;

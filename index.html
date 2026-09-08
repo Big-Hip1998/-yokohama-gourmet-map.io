@@ -78,6 +78,12 @@
     <!-- 詳細スライドパネル -->
     <div id="detail-panel" class="detail-panel">
       <button class="close-btn" onclick="closeDetailPanel()">&times;</button>
+      
+      <!-- 複数店舗画像表示領域 -->
+      <div id="detail-image-container" class="detail-image-box" style="display:none;">
+        <div id="detail-image-wrapper" class="detail-image-wrapper"></div>
+      </div>
+
       <h2 id="detail-name">店舗名</h2>
       <div class="detail-item"><strong>ジャンル</strong><span id="detail-genre">-</span></div>
       <div class="detail-item"><strong>予算</strong><span id="detail-budget">-</span></div>
@@ -104,6 +110,10 @@
         <div class="filter-group">
           <label>店名 *</label>
           <input type="text" id="reg-name" required>
+        </div>
+        <div class="filter-group">
+          <label>店舗画像（最大5枚まで）</label>
+          <input type="file" id="reg-image" accept="image/*" multiple onchange="validateImageCount(this)">
         </div>
         <div class="filter-group">
           <label>ジャンル *</label>
