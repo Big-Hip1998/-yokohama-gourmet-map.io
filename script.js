@@ -7,8 +7,21 @@ const MAX_STORES = 30;
 let map;
 let markerLayerGroup;
 let currentStores = [];
-let selectedStore = null; // 現在選択中の店舗
-let isSignUpMode = false; // ログイン/登録モーダルのモード状態
+let selectedStore = null;
+let isSignUpMode = false;
+
+// 登録時の仮ピン用変数
+let tempMarker = null;
+
+// 赤い仮ピン用アイコンの定義
+const tempIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 // 初期化処理
 async function initApp() {
@@ -20,9 +33,21 @@ async function initApp() {
 
   markerLayerGroup = L.layerGroup().addTo(map);
 
+  // 地図クリック時の処理（仮ピンを立てる）
   map.on('click', (e) => {
-    document.getElementById("reg-lat").value = e.latlng.lat;
-    document.getElementById("reg-lng").value = e.latlng.lng;
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+
+    document.getElementById("reg-lat").value = lat;
+    document.getElementById("reg-lng").value = lng;
+
+    // すでに仮ピンがある場合は位置を移動、ない場合は新規作成
+    if (tempMarker) {
+      tempMarker.setLatLng([lat, lng]);
+    } else {
+      tempMarker = L.marker([lat, lng], { icon: tempIcon }).addTo(map);
+      tempMarker.bindPopup("<b>登録予定位置</b>").openPopup();
+    }
   });
 
   // 認証状態の監視
@@ -38,7 +63,6 @@ function updateAuthUI(user) {
   const loginBtn = document.getElementById("login-btn");
   const logoutBtn = document.getElementById("logout-btn");
   const userEmail = document.getElementById("user-email");
-  const deleteBtn = document.getElementById("delete-store-btn");
 
   if (user) {
     loginBtn.style.display = "none";
@@ -51,7 +75,6 @@ function updateAuthUI(user) {
     userEmail.style.display = "none";
   }
 
-  // 選択中の店舗がある場合、削除ボタン表示状態を更新
   if (selectedStore) {
     checkDeleteButtonVisibility(selectedStore);
   }
@@ -157,7 +180,6 @@ async function openDetailPanel(store) {
   document.getElementById("detail-panel").classList.add("active");
 }
 
-// 削除ボタンの表示判定（自身が登録した店舗、もしくは所有者不明データの場合表示）
 async function checkDeleteButtonVisibility(store) {
   const deleteBtn = document.getElementById("delete-store-btn");
   const { data: { user } } = await supabaseClient.auth.getUser();
@@ -196,12 +218,28 @@ async function openRegisterModal() {
     return;
   }
   if (currentStores.length >= MAX_STORES) return;
+
+  const defaultLat = parseFloat(document.getElementById("reg-lat").value);
+  const defaultLng = parseFloat(document.getElementById("reg-lng").value);
+
+  if (tempMarker) {
+    tempMarker.setLatLng([defaultLat, defaultLng]);
+  } else {
+    tempMarker = L.marker([defaultLat, defaultLng], { icon: tempIcon }).addTo(map);
+    tempMarker.bindPopup("<b>登録予定位置</b>").openPopup();
+  }
+
   document.getElementById("register-modal").classList.add("active");
 }
 
 function closeRegisterModal() {
   document.getElementById("register-modal").classList.remove("active");
   document.getElementById("register-form").reset();
+
+  if (tempMarker) {
+    map.removeLayer(tempMarker);
+    tempMarker = null;
+  }
 }
 
 async function handleRegister(e) {
@@ -241,6 +279,10 @@ async function handleRegister(e) {
   if (error) {
     alert('保存に失敗しました: ' + error.message);
   } else {
+    if (tempMarker) {
+      map.removeLayer(tempMarker);
+      tempMarker = null;
+    }
     await fetchStoresFromSupabase();
     closeRegisterModal();
   }
@@ -259,7 +301,8 @@ async function handleDeleteStore() {
       .eq('id', selectedStore.id);
 
     if (error) {
-      alert('削除に失敗しました: ' + error.message);
+      alert(`削除に失敗しました:\n${error.message} (コード: ${error.code})`);
+      console.error('Delete error details:', error);
     } else {
       alert('削除完了しました。');
       closeDetailPanel();
@@ -268,7 +311,7 @@ async function handleDeleteStore() {
   }
 }
 
-// --- 認証 (ログイン・新規登録・ログアウト) 機能 ---
+// --- 認証機能 ---
 function openAuthModal() {
   document.getElementById("auth-modal").classList.add("active");
 }
