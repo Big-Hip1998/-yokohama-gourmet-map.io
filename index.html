@@ -40,48 +40,53 @@
   </header>
 
   <div class="main-container">
+    <!-- 地図領域 -->
+    <div id="map"></div>
+
     <!-- サイドバー (絞り込み機能) -->
-    <div class="sidebar">
-      <h3>店舗検索・絞り込み</h3>
-      <div class="filter-group">
-        <label>店舗名検索</label>
-        <input type="text" id="search-name" placeholder="店名を入力..." oninput="filterMarkers()">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header" onclick="toggleSidebar()">
+        <h3>店舗検索・絞り込み</h3>
+        <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle-btn">検索・絞り込み</button>
       </div>
-      <div class="filter-group">
-        <label>ジャンル</label>
-        <select id="filter-genre" onchange="filterMarkers()">
-          <option value="">すべて</option>
-          <option value="和食">和食</option>
-          <option value="洋食">洋食</option>
-          <option value="中華">中華</option>
-          <option value="イタリアン">イタリアン</option>
-          <option value="居酒屋">居酒屋</option>
-          <option value="カフェ">カフェ</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>予算</label>
-        <select id="filter-budget" onchange="filterMarkers()">
-          <option value="">すべて</option>
-          <option value="1000円以内">1000円以内</option>
-          <option value="3000円くらい">3000円くらい</option>
-          <option value="5000円くらい">5000円くらい</option>
-          <option value="10000円以上">10000円以上</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>こだわり条件</label>
-        <div class="checkbox-grid">
-          <label><input type="checkbox" id="filter-charter" onchange="filterMarkers()"> 貸切</label>
-          <label><input type="checkbox" id="filter-course" onchange="filterMarkers()"> コース</label>
-          <label><input type="checkbox" id="filter-drink" onchange="filterMarkers()"> 飲み放題</label>
-          <label><input type="checkbox" id="filter-eat" onchange="filterMarkers()"> 食べ放題</label>
+      <div class="sidebar-content" id="sidebar-content">
+        <div class="filter-group">
+          <label>店舗名検索</label>
+          <input type="text" id="search-name" placeholder="店名を入力..." oninput="filterMarkers()">
+        </div>
+        <div class="filter-group">
+          <label>ジャンル</label>
+          <select id="filter-genre" onchange="filterMarkers()">
+            <option value="">すべて</option>
+            <option value="和食">和食</option>
+            <option value="洋食">洋食</option>
+            <option value="中華">中華</option>
+            <option value="イタリアン">イタリアン</option>
+            <option value="居酒屋">居酒屋</option>
+            <option value="カフェ">カフェ</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>予算</label>
+          <select id="filter-budget" onchange="filterMarkers()">
+            <option value="">すべて</option>
+            <option value="1000円以内">1000円以内</option>
+            <option value="3000円くらい">3000円くらい</option>
+            <option value="5000円くらい">5000円くらい</option>
+            <option value="10000円以上">10000円以上</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>こだわり条件</label>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" id="filter-charter" onchange="filterMarkers()"> 貸切</label>
+            <label><input type="checkbox" id="filter-course" onchange="filterMarkers()"> コース</label>
+            <label><input type="checkbox" id="filter-drink" onchange="filterMarkers()"> 飲み放題</label>
+            <label><input type="checkbox" id="filter-eat" onchange="filterMarkers()"> 食べ放題</label>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- 地図領域 -->
-    <div id="map"></div>
 
     <!-- 詳細スライドパネル -->
     <div id="detail-panel" class="detail-panel">

@@ -36,7 +36,7 @@ const tempIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// ★ 特異点（マーキングピン）専用緑色アイコン（緑色で店舗ピンと差別化）
+// 特異点（マーキングピン）専用緑色アイコン
 const singularityIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -100,6 +100,20 @@ async function initApp() {
   });
 
   await fetchStoresFromSupabase();
+}
+
+// --- モバイル用サイドバー（検索パネル）の開閉 ---
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebar-toggle-btn");
+  
+  sidebar.classList.toggle("open");
+  
+  if (sidebar.classList.contains("open")) {
+    toggleBtn.innerText = "閉じる";
+  } else {
+    toggleBtn.innerText = "検索・絞り込み";
+  }
 }
 
 // --- 特異点（マーキングピン）機能 ---
@@ -230,7 +244,7 @@ function renderSingularityList() {
     const item = document.createElement("div");
     item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding: 5px 0; border-bottom: 1px solid #eee;";
 
-    const canDelete = singularities.length > 1; // 最低1つは残す
+    const canDelete = singularities.length > 1;
 
     item.innerHTML = `
       <div style="font-size:0.85rem;">
@@ -260,7 +274,6 @@ function removeSingularity(singularityId) {
   renderSingularityMarkers();
   renderSingularityList();
 }
-
 
 // --- ユーザー状態更新 ---
 async function updateAuthUIAndSwitchMap(user, authEvent) {
