@@ -19,22 +19,22 @@
     <div class="header-actions">
       <!-- 特異点移動・選択グループ -->
       <div class="singularity-selector-group">
-        <select id="singularity-select" class="select-singularity" onchange="handleSingularityChange()">
+        <select id="singularity-select" class="select-singularity">
           <!-- JSで動的に追加されます -->
         </select>
-        <button class="btn btn-orange" onclick="moveToSelectedSingularity()">特異点へ移動</button>
-        <button class="btn btn-blue" onclick="openSingularityModal()">特異点管理</button>
+        <button id="move-singularity-btn" class="btn btn-orange">特異点へ移動</button>
+        <button id="open-singularity-modal-btn" class="btn btn-blue">特異点管理</button>
       </div>
 
       <div id="count-indicator" class="indicator">登録数: 0 / 30 件</div>
-      <button id="add-store-btn" class="btn btn-success" onclick="openRegisterModal()">+ 店舗登録</button>
-      <button class="btn" onclick="openShareModal()">共有・切り替え</button>
+      <button id="add-store-btn" class="btn btn-success">+ 店舗登録</button>
+      <button id="open-share-modal-btn" class="btn">共有・切り替え</button>
       
       <!-- ログイン状態表示 -->
       <div id="auth-section">
-        <button id="login-btn" class="btn" onclick="openAuthModal()">ログイン</button>
+        <button id="login-btn" class="btn">ログイン</button>
         <span id="user-email" class="user-email-text" style="display:none;"></span>
-        <button id="logout-btn" class="btn btn-danger" style="display:none;" onclick="handleLogout()">ログアウト</button>
+        <button id="logout-btn" class="btn btn-danger" style="display:none;">ログアウト</button>
       </div>
     </div>
   </header>
@@ -45,18 +45,18 @@
 
     <!-- サイドバー (絞り込み機能) -->
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header" onclick="toggleSidebar()">
+      <div class="sidebar-header" id="sidebar-header">
         <h3>店舗検索・絞り込み</h3>
         <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle-btn">検索・絞り込み</button>
       </div>
       <div class="sidebar-content" id="sidebar-content">
         <div class="filter-group">
-          <label>店舗名検索</label>
-          <input type="text" id="search-name" placeholder="店名を入力..." oninput="filterMarkers()">
+          <label for="search-name">店舗名検索</label>
+          <input type="text" id="search-name" placeholder="店名を入力...">
         </div>
         <div class="filter-group">
-          <label>ジャンル</label>
-          <select id="filter-genre" onchange="filterMarkers()">
+          <label for="filter-genre">ジャンル</label>
+          <select id="filter-genre">
             <option value="">すべて</option>
             <option value="和食">和食</option>
             <option value="洋食">洋食</option>
@@ -67,8 +67,8 @@
           </select>
         </div>
         <div class="filter-group">
-          <label>予算</label>
-          <select id="filter-budget" onchange="filterMarkers()">
+          <label for="filter-budget">予算</label>
+          <select id="filter-budget">
             <option value="">すべて</option>
             <option value="1000円以内">1000円以内</option>
             <option value="3000円くらい">3000円くらい</option>
@@ -79,10 +79,10 @@
         <div class="filter-group">
           <label>こだわり条件</label>
           <div class="checkbox-grid">
-            <label><input type="checkbox" id="filter-charter" onchange="filterMarkers()"> 貸切</label>
-            <label><input type="checkbox" id="filter-course" onchange="filterMarkers()"> コース</label>
-            <label><input type="checkbox" id="filter-drink" onchange="filterMarkers()"> 飲み放題</label>
-            <label><input type="checkbox" id="filter-eat" onchange="filterMarkers()"> 食べ放題</label>
+            <label><input type="checkbox" id="filter-charter"> 貸切</label>
+            <label><input type="checkbox" id="filter-course"> コース</label>
+            <label><input type="checkbox" id="filter-drink"> 飲み放題</label>
+            <label><input type="checkbox" id="filter-eat"> 食べ放題</label>
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@
 
     <!-- 詳細スライドパネル -->
     <div id="detail-panel" class="detail-panel">
-      <button class="close-btn" onclick="closeDetailPanel()">&times;</button>
+      <button id="close-detail-btn" class="close-btn">&times;</button>
       
       <!-- 複数店舗画像表示領域 -->
       <div id="detail-image-container" class="detail-image-box" style="display:none;">
@@ -109,7 +109,7 @@
       <div class="detail-item detail-notes-item"><strong>備考</strong><span id="detail-notes">-</span></div>
       
       <div style="margin-top:20px;">
-        <button id="delete-store-btn" class="btn btn-danger" style="width:100%; display:none;" onclick="handleDeleteStore()">この店舗を削除する</button>
+        <button id="delete-store-btn" class="btn btn-danger" style="width:100%; display:none;">この店舗を削除する</button>
       </div>
     </div>
   </div>
@@ -120,14 +120,14 @@
       <h2>特異点（マーキングピン）の管理</h2>
       <p class="modal-notice">※新しい特異点を追加するには、地図上をクリックするか、現在地を中心にして保存してください。</p>
 
-      <form id="add-singularity-form" onsubmit="handleAddSingularity(event)">
+      <form id="add-singularity-form">
         <div class="filter-group">
-          <label>特異点の名前 (例: 自宅, 会社, 実家)</label>
+          <label for="singularity-name-input">特異点の名前 (例: 自宅, 会社, 実家)</label>
           <input type="text" id="singularity-name-input" required placeholder="名前を入力...">
         </div>
         <div class="flex-row" style="margin-bottom: 15px;">
           <input type="text" id="singularity-coords-input" readonly placeholder="地図をクリックして座標を選択">
-          <button type="button" class="btn btn-blue" onclick="setSingularityFromMapCenter()">画面中心を使用</button>
+          <button type="button" id="use-map-center-btn" class="btn btn-blue">画面中心を使用</button>
         </div>
         <input type="hidden" id="singularity-lat-input">
         <input type="hidden" id="singularity-lng-input">
@@ -140,7 +140,7 @@
       <div id="singularity-list" class="fav-list" style="max-height: 180px; margin-top:8px;"></div>
 
       <div class="modal-actions" style="margin-top:15px;">
-        <button type="button" class="btn btn-gray" onclick="closeSingularityModal()">閉じる</button>
+        <button type="button" id="close-singularity-modal-btn" class="btn btn-gray">閉じる</button>
       </div>
     </div>
   </div>
@@ -149,18 +149,18 @@
   <div id="register-modal" class="modal-overlay">
     <div class="modal">
       <h2>店舗を新規登録</h2>
-      <form id="register-form" onsubmit="handleRegister(event)">
+      <form id="register-form">
         <p class="modal-notice">※地図上をクリックするとその場所の座標が自動セットされます</p>
         <div class="filter-group">
-          <label>店名 *</label>
+          <label for="reg-name">店名 *</label>
           <input type="text" id="reg-name" required>
         </div>
         <div class="filter-group">
-          <label>店舗画像（最大5枚まで）</label>
-          <input type="file" id="reg-image" accept="image/*" multiple onchange="validateImageCount(this)">
+          <label for="reg-image">店舗画像（最大5枚まで）</label>
+          <input type="file" id="reg-image" accept="image/*" multiple>
         </div>
         <div class="filter-group">
-          <label>ジャンル *</label>
+          <label for="reg-genre">ジャンル *</label>
           <select id="reg-genre" required>
             <option value="">選択してください</option>
             <option value="和食">和食</option>
@@ -172,7 +172,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <label>予算 *</label>
+          <label for="reg-budget">予算 *</label>
           <select id="reg-budget" required>
             <option value="">選択してください</option>
             <option value="1000円以内">1000円以内</option>
@@ -191,27 +191,27 @@
           </div>
         </div>
         <div class="filter-group">
-          <label>連絡先</label>
+          <label for="reg-phone">連絡先</label>
           <input type="text" id="reg-phone">
         </div>
         <div class="filter-group">
-          <label>公式サイト URL</label>
+          <label for="reg-official">公式サイト URL</label>
           <input type="url" id="reg-official">
         </div>
         <div class="filter-group">
-          <label>食べログ URL</label>
+          <label for="reg-tabelog">食べログ URL</label>
           <input type="url" id="reg-tabelog">
         </div>
         <div class="filter-group">
-          <label>ホットペッパー URL</label>
+          <label for="reg-hotpepper">ホットペッパー URL</label>
           <input type="url" id="reg-hotpepper">
         </div>
         <div class="filter-group">
-          <label>他サイト URL</label>
+          <label for="reg-other">他サイト URL</label>
           <input type="url" id="reg-other">
         </div>
         <div class="filter-group">
-          <label>備考</label>
+          <label for="reg-notes">備考</label>
           <textarea id="reg-notes" placeholder="メモや補足情報を入力してください..."></textarea>
         </div>
         
@@ -219,7 +219,7 @@
         <input type="hidden" id="reg-lng" value="139.6223">
 
         <div class="modal-actions">
-          <button type="button" class="btn btn-gray" onclick="closeRegisterModal()">キャンセル</button>
+          <button type="button" id="close-register-modal-btn" class="btn btn-gray">キャンセル</button>
           <button type="submit" id="submit-btn" class="btn btn-success">登録</button>
         </div>
       </form>
@@ -230,19 +230,19 @@
   <div id="auth-modal" class="modal-overlay">
     <div class="modal">
       <h2 id="auth-title">ログイン</h2>
-      <form onsubmit="handleAuthSubmit(event)">
+      <form id="auth-form">
         <div class="filter-group">
-          <label>メールアドレス</label>
+          <label for="auth-email">メールアドレス</label>
           <input type="email" id="auth-email" required placeholder="example@email.com">
         </div>
         <div class="filter-group">
-          <label>パスワード</label>
+          <label for="auth-password">パスワード</label>
           <input type="password" id="auth-password" required minlength="6" placeholder="6文字以上">
         </div>
         <div class="auth-modal-footer">
-          <a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)">新規登録はこちら</a>
+          <a href="#" id="auth-toggle-link">新規登録はこちら</a>
           <div class="modal-actions">
-            <button type="button" class="btn btn-gray" onclick="closeAuthModal()">閉じる</button>
+            <button type="button" id="close-auth-modal-btn" class="btn btn-gray">閉じる</button>
             <button type="submit" class="btn btn-success" id="auth-submit-btn">ログイン</button>
           </div>
         </div>
@@ -256,23 +256,23 @@
       <h2>マップの共有・切り替え</h2>
       
       <div class="filter-group">
-        <label>現在表示中のマップID</label>
+        <label for="share-current-id">現在表示中のマップID</label>
         <div class="flex-row">
           <input type="text" id="share-current-id" readonly value="">
-          <button type="button" class="btn btn-blue" onclick="copyMapId()">コピー</button>
+          <button type="button" id="copy-map-id-btn" class="btn btn-blue">コピー</button>
         </div>
       </div>
 
       <div class="flex-row" style="margin-top: 10px;">
         <input type="text" id="fav-title-input" placeholder="お気に入りの名前 (例: たろうのマップ)">
-        <button type="button" class="btn btn-orange" style="white-space:nowrap;" onclick="addCurrentToFavorites()">★ お気に入り追加</button>
+        <button type="button" id="add-favorite-btn" class="btn btn-orange" style="white-space:nowrap;">★ お気に入り追加</button>
       </div>
 
       <div class="info-box">
         <div style="font-size:0.85rem; margin-bottom: 5px;">
           自分のデフォルトマップID: <strong id="my-default-map-id">-</strong>
         </div>
-        <button type="button" class="btn btn-success" style="width:100%;" onclick="switchToMyDefaultMap()">
+        <button type="button" id="switch-my-default-btn" class="btn btn-success" style="width:100%;">
           自分のデフォルトマップを表示する
         </button>
       </div>
@@ -285,12 +285,12 @@
       <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
 
       <div class="filter-group">
-        <label>他人のマップIDを読み込む</label>
+        <label for="share-input-id">他人のマップIDを読み込む</label>
         <input type="text" id="share-input-id" placeholder="例: MAP-A3F8B2">
       </div>
       <div class="modal-actions" style="margin-top:15px;">
-        <button type="button" class="btn btn-gray" onclick="closeShareModal()">閉じる</button>
-        <button type="button" class="btn btn-success" onclick="handleImportMap()">このマップを表示</button>
+        <button type="button" id="close-share-modal-btn" class="btn btn-gray">閉じる</button>
+        <button type="button" id="import-map-btn" class="btn btn-success">このマップを表示</button>
       </div>
     </div>
   </div>
