@@ -1,10 +1,3 @@
-現在のコード実装（`index_2.html`、`script_2.js`、`style_2.css`）およびSupabaseのデータベース構成（RLS設定含む）に完全に合わせた、最新の **`README.md`** の作成案です。
-
-リポジトリ内の `README.md` を以下の内容に更新してご活用ください。
-
----
-
-```markdown
 # 横浜 グルメMap 取扱説明書
 
 Webブラウザ上で動作する、自分だけのグルメマップを作成・共有できるマップアプリケーションです。  
@@ -148,7 +141,3 @@ CREATE POLICY "Users can manage their own favorite maps" ON favorite_maps
 * **地図ライブラリ**: [Leaflet.js](https://leafletjs.com/) (OpenStreetMap)
 * **バックエンド / DB**: [Supabase](https://supabase.com/) (Database, Auth, Storage)
 * **ホスティング**: GitHub Pages
-
-```
-
-```
